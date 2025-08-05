@@ -2,42 +2,39 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "your-dockerhub-username/jenkins-starter"
+        DOCKER_IMAGE = "naseerfullstack/jenkins-starter"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-username/jenkins-starter.git'
+                git branch: 'main', url: 'https://github.com/Naseer-Ahmadd/jenkins-starter.git'
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .'
             }
         }
 
         stage('Test') {
             steps {
+                sh 'npm install'
                 sh 'npm test'
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_IMAGE
+                        docker push $DOCKER_IMAGE:$BUILD_NUMBER
+                        docker tag $DOCKER_IMAGE:$BUILD_NUMBER $DOCKER_IMAGE:latest
+                        docker push $DOCKER_IMAGE:latest
                     '''
                 }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo "Deployment step goes here"
             }
         }
     }
